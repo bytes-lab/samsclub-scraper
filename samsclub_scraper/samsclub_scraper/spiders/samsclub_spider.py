@@ -28,17 +28,11 @@ class SamsclubSpider(scrapy.Spider):
 
         if products:
             for product in products:
-                title = product.css('figcaption.sc-text-body::text').extract_first()
-                model_num = product.css('span.list-view-modelnumber::text').extract_first()
-                picture = product.css('img.cardProdImg::attr(data-src)').extract_first()
+                # model_num = product.css('span.list-view-modelnumber::text').extract_first()
                 detail_link = 'https://www.samsclub.com' + product.css('a.cardProdLink::attr(href)').extract_first()
-                shipping = product.css('span.sc-free-shipping::text').extract_first()
 
                 request = scrapy.Request(detail_link, headers=self.header, callback=self.detail)
-                request.meta['title'] = title
-                request.meta['model_num'] = model_num
-                request.meta['picture'] = picture
-                request.meta['shipping'] = shipping
+                # request.meta['model_num'] = model_num
                 yield request
 
             # for other pages / pagination
@@ -60,20 +54,27 @@ class SamsclubSpider(scrapy.Spider):
     def detail(self, response):
         sel = Selector(response)
         item_id = response.css('input[id=mbxProductId]::attr(value)').extract_first()
-        # price = re.search(r'\s*"item_price":"([\d\.]+?)",\s*', response.body).group(1)
-        old_price = product.css('span.strikedPrice::text').extract_first()
+        price = response.css('span[itemprop=price]::text').extract_first()
+        old_price = response.css('span.strikedPrice::text').extract_first()
         promo = self.get_promo(price, old_price)
-
-        print item_id, '#######33'
+        picture = response.css('img[itemprop=image]::attr(src)').extract_first()
+        title = response.css('img[itemprop=image]::attr(title)').extract_first()
+        detail_info = self.get_detail(item_id)
+        bullet_points = detail_info['Description'].replace('<ul>', '').replace('</ul>', '').replace('<li>', '').replace('</li>', '')
+        rating = detail_info['FilteredReviewStatistics']['AverageOverallRating']
+        review_count = detail_info['FilteredReviewStatistics']['TotalReviewCount']
 
         yield {
-            'title': response.meta['title'],
+            'title': title,
             'id': response.css('input[id=itemNo]::attr(value)').extract_first(),
-            'picture': response.meta['picture'],
-            'price': response.css('span[itemprop=price]::text').extract_first(),
-            'model_num': response.meta['model_num'],
-            # 'promo': response.meta['promo'],
-            'shipping': response.meta['shipping'],
+            'picture': picture,
+            'price': price,
+            'bullet_points': bullet_points,
+            'rating': rating,
+            'review_count': review_count,
+            # 'model_num': response.meta['model_num'],
+            'promo': promo,
+            'shipping': response.css('div.freeDelvryTxt::text').extract_first(),
             'delivery_time': response.css('div.finePrint::text').extract_first(),
         }        
 
@@ -126,3 +127,15 @@ class SamsclubSpider(scrapy.Spider):
             old_price = old_price.group(1)
             return float(old_price) - float(price)
 
+    def get_detail(self, product_id):
+        url = 'https://api.bazaarvoice.com/data/batch.json?passkey=dap59bp2pkhr7ccd1hv23n39x&apiversion=5.5&displaycode=1337-en_us&resource.q0=products&filter.q0=id%3Aeq%3A==**==&stats.q0=questions%2Creviews&filteredstats.q0=questions%2Creviews&filter_questions.q0=contentlocale%3Aeq%3Aen_US&filter_answers.q0=contentlocale%3Aeq%3Aen_US&filter_reviews.q0=contentlocale%3Aeq%3Aen_US&filter_reviewcomments.q0=contentlocale%3Aeq%3Aen_US&resource.q1=questions&filter.q1=productid%3Aeq%3A==**==&filter.q1=contentlocale%3Aeq%3Aen_US&sort.q1=totalanswercount%3Adesc&stats.q1=questions&filteredstats.q1=questions&include.q1=authors%2Cproducts%2Canswers&filter_questions.q1=contentlocale%3Aeq%3Aen_US&filter_answers.q1=contentlocale%3Aeq%3Aen_US&sort_answers.q1=totalpositivefeedbackcount%3Adesc%2Ctotalnegativefeedbackcount%3Aasc&limit.q1=10&offset.q1=0&limit_answers.q1=10&resource.q2=reviews&filter.q2=isratingsonly%3Aeq%3Afalse&filter.q2=productid%3Aeq%3A==**==&filter.q2=contentlocale%3Aeq%3Aen_US&sort.q2=helpfulness%3Adesc%2Ctotalpositivefeedbackcount%3Adesc&stats.q2=reviews&filteredstats.q2=reviews&include.q2=authors%2Cproducts%2Ccomments&filter_reviews.q2=contentlocale%3Aeq%3Aen_US&filter_reviewcomments.q2=contentlocale%3Aeq%3Aen_US&filter_comments.q2=contentlocale%3Aeq%3Aen_US&limit.q2=8&offset.q2=0&limit_comments.q2=3&resource.q3=reviews&filter.q3=productid%3Aeq%3A==**==&filter.q3=contentlocale%3Aeq%3Aen_US&limit.q3=1&resource.q4=reviews&filter.q4=productid%3Aeq%3A==**==&filter.q4=isratingsonly%3Aeq%3Afalse&filter.q4=issyndicated%3Aeq%3Afalse&filter.q4=rating%3Agt%3A3&filter.q4=totalpositivefeedbackcount%3Agte%3A3&filter.q4=contentlocale%3Aeq%3Aen_US&sort.q4=totalpositivefeedbackcount%3Adesc&include.q4=authors%2Creviews%2Cproducts&filter_reviews.q4=contentlocale%3Aeq%3Aen_US&limit.q4=1&resource.q5=reviews&filter.q5=productid%3Aeq%3A==**==&filter.q5=isratingsonly%3Aeq%3Afalse&filter.q5=issyndicated%3Aeq%3Afalse&filter.q5=rating%3Alte%3A3&filter.q5=totalpositivefeedbackcount%3Agte%3A3&filter.q5=contentlocale%3Aeq%3Aen_US&sort.q5=totalpositivefeedbackcount%3Adesc&include.q5=authors%2Creviews%2Cproducts&filter_reviews.q5=contentlocale%3Aeq%3Aen_US&limit.q5=1&callback=BV._internal.dataHandler0'
+        url = url.replace('==**==', product_id)
+        res = requests.get(url=url)
+
+        try:
+            quantity_ = json.loads(res.text[26:-1])['BatchedResults']['q0']['Results'][0]
+        except Exception, e:
+            print '==============================', res.json()
+            if 'errorMessage' in res.json():
+                return 0
+        return quantity_
