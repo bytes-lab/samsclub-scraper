@@ -13,6 +13,4 @@ app = Celery('tasks', backend='amqp',
 
 @periodic_task(run_every=timedelta(minutes=1))
 def scrape_samsclub():
-    print "start"
     os.system("python celery_crawler.py ALL")
-    return;
