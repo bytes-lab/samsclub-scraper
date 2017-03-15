@@ -20,13 +20,20 @@ class SamsclubSpider(scrapy.Spider):
         categories = [
             # 'spring-renewal/5160101',
             'fine-writing-supplies/9165'
+            # 'office-supplies/1706'
         ]
         return [scrapy.Request('https://www.samsclub.com/sams/{}.cp'.format(item), headers=self.header, callback=self.parse) for item in categories]
 
     def parse(self, response):
+        cates = response.css('ul.catLeftNav li a::attr(href)').extract()
+        cates = [item.split('.cp')[0] for item in cates]
         products = response.css('div.sc-product-card')
 
-        if products:
+        if cates:
+            for url in cates:
+                url_ = 'https://www.samsclub.com{}.cp'.format(url)
+                yield scrapy.Request(url_, headers=self.header, callback=self.parse)
+        elif products:
             for product in products:
                 # model_num = product.css('span.list-view-modelnumber::text').extract_first()
                 detail_link = 'https://www.samsclub.com' + product.css('a.cardProdLink::attr(href)').extract_first()
@@ -46,9 +53,6 @@ class SamsclubSpider(scrapy.Spider):
                 request.meta['offset'] = offset + 48
                 request.meta['total_records'] = total_records
                 yield request
-        # else:
-        #     for url in cates:
-        #         yield scrapy.Request(url, headers=self.header, callback=self.parse)
 
 
     def detail(self, response):
