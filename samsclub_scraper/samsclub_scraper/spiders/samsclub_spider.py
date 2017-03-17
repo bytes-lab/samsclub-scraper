@@ -3,6 +3,7 @@ import re
 import scrapy
 import requests
 import json
+from selenium import webdriver
 
 from scrapy.selector import Selector
 
@@ -16,12 +17,14 @@ class SamsclubSpider(scrapy.Spider):
 
     def __init__(self, param=[]):
         self.param = param
+        self.driver = webdriver.PhantomJS(service_args=['--ignore-ssl-errors=true','--ssl-protocol=any'])
+        self.driver.set_window_size(1120, 550)
 
     def start_requests(self):
         categories = [
             # 'spring-renewal/5160101',
-            # 'fine-writing-supplies/9165'
-            'office-supplies/1706'
+            'fine-writing-supplies/9165'
+            # 'office-supplies/1706'
         ]
         return [scrapy.Request('https://www.samsclub.com/sams/{}.cp'.format(item), headers=self.header, callback=self.parse) for item in categories]
 
@@ -92,15 +95,6 @@ class SamsclubSpider(scrapy.Spider):
             'quantity': 9999,
             'min_quantity': 1
         }        
-
-    def get_description(self, des_key, des_val):
-        description = ''
-        if des_key:
-            des_val = [item.strip() for item in des_val if item.strip()]
-            for idx in range(len(des_val)):
-                description += '{} {}\n'.format(des_key[idx].strip().encode('utf-8'), 
-                                                des_val[idx].strip().encode('utf-8'))
-        return description.replace(',', '')
 
     def get_real_quantity(self, body):
         url = 'https://www.costco.com/AjaxManageShoppingCartCmd'
