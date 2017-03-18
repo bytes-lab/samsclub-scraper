@@ -1,15 +1,19 @@
 # -*- coding: utf-8 -*-
 import re
+import os
+import django
 import scrapy
 import requests
 import json
+from os import sys, path
 from selenium import webdriver
-
 from scrapy.selector import Selector
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.keys import Keys
+
+sys.path.append(path.dirname(path.dirname(path.dirname(path.dirname(path.abspath(__file__))))))
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "samsclub_site.settings")
+django.setup()
+
+from product.models import *
 
 class SamsclubSpider(scrapy.Spider):
     name = "samsclub"
@@ -23,8 +27,8 @@ class SamsclubSpider(scrapy.Spider):
 
     def start_requests(self):
         categories = [
-            # 'spring-renewal/5160101',
-            'fine-writing-supplies/9165'
+            'spring-renewal/5160101',
+            # 'fine-writing-supplies/9165'
             # 'office-supplies/1706'
         ]
         return [scrapy.Request('https://www.samsclub.com/sams/{}.cp'.format(item), headers=self.header, callback=self.parse) for item in categories]
@@ -71,10 +75,8 @@ class SamsclubSpider(scrapy.Spider):
         title = response.css('img[itemprop=image]::attr(title)').extract_first()
         detail_info = self.get_detail(item_id)
         base_url = response.url.split('?')[0]
-
-        quantity = self.get_real_quantity(base_url, sku_id, item_id)
         bullet_points = detail_info['Description'] or ''
-        # bullet_points = re.sub(r"</?.*>", "", detail_info['Description'])
+
         html_tags = ['<ul>', '</ul>', '<li>', '</li>', '<b>', '</b>', '<p>', '</p>', 
                      '<div>', '</div>']
         for htag in html_tags:
@@ -83,11 +85,12 @@ class SamsclubSpider(scrapy.Spider):
         rating = detail_info['FilteredReviewStatistics']['AverageOverallRating']
         rating = '{0:0.1f}'.format(float(rating)) if rating else 0
         review_count = detail_info['FilteredReviewStatistics']['TotalReviewCount']
+        quantity = self.get_real_quantity(base_url, sku_id, item_id)
 
         yield {
             'id': response.css('input[id=itemNo]::attr(value)').extract_first(),
             'title': title,
-            'price': price,
+            'price': '$'+price if price else 0,
             'picture': picture,
             'rating': rating or 0,
             'review_count': review_count,
@@ -147,7 +150,7 @@ class SamsclubSpider(scrapy.Spider):
         except Exception, e:
             pass
 
-        return quantity
+        return int(quantity)
 
     def get_total_records(self, response):
         total_records = re.search(r'\s\'totalRecords\':\'(\d+?)\',\s*', response.body)
@@ -165,12 +168,18 @@ class SamsclubSpider(scrapy.Spider):
     def get_detail(self, product_id):
         url = 'https://api.bazaarvoice.com/data/batch.json?passkey=dap59bp2pkhr7ccd1hv23n39x&apiversion=5.5&displaycode=1337-en_us&resource.q0=products&filter.q0=id%3Aeq%3A==**==&stats.q0=questions%2Creviews&filteredstats.q0=questions%2Creviews&filter_questions.q0=contentlocale%3Aeq%3Aen_US&filter_answers.q0=contentlocale%3Aeq%3Aen_US&filter_reviews.q0=contentlocale%3Aeq%3Aen_US&filter_reviewcomments.q0=contentlocale%3Aeq%3Aen_US&resource.q1=questions&filter.q1=productid%3Aeq%3A==**==&filter.q1=contentlocale%3Aeq%3Aen_US&sort.q1=totalanswercount%3Adesc&stats.q1=questions&filteredstats.q1=questions&include.q1=authors%2Cproducts%2Canswers&filter_questions.q1=contentlocale%3Aeq%3Aen_US&filter_answers.q1=contentlocale%3Aeq%3Aen_US&sort_answers.q1=totalpositivefeedbackcount%3Adesc%2Ctotalnegativefeedbackcount%3Aasc&limit.q1=10&offset.q1=0&limit_answers.q1=10&resource.q2=reviews&filter.q2=isratingsonly%3Aeq%3Afalse&filter.q2=productid%3Aeq%3A==**==&filter.q2=contentlocale%3Aeq%3Aen_US&sort.q2=helpfulness%3Adesc%2Ctotalpositivefeedbackcount%3Adesc&stats.q2=reviews&filteredstats.q2=reviews&include.q2=authors%2Cproducts%2Ccomments&filter_reviews.q2=contentlocale%3Aeq%3Aen_US&filter_reviewcomments.q2=contentlocale%3Aeq%3Aen_US&filter_comments.q2=contentlocale%3Aeq%3Aen_US&limit.q2=8&offset.q2=0&limit_comments.q2=3&resource.q3=reviews&filter.q3=productid%3Aeq%3A==**==&filter.q3=contentlocale%3Aeq%3Aen_US&limit.q3=1&resource.q4=reviews&filter.q4=productid%3Aeq%3A==**==&filter.q4=isratingsonly%3Aeq%3Afalse&filter.q4=issyndicated%3Aeq%3Afalse&filter.q4=rating%3Agt%3A3&filter.q4=totalpositivefeedbackcount%3Agte%3A3&filter.q4=contentlocale%3Aeq%3Aen_US&sort.q4=totalpositivefeedbackcount%3Adesc&include.q4=authors%2Creviews%2Cproducts&filter_reviews.q4=contentlocale%3Aeq%3Aen_US&limit.q4=1&resource.q5=reviews&filter.q5=productid%3Aeq%3A==**==&filter.q5=isratingsonly%3Aeq%3Afalse&filter.q5=issyndicated%3Aeq%3Afalse&filter.q5=rating%3Alte%3A3&filter.q5=totalpositivefeedbackcount%3Agte%3A3&filter.q5=contentlocale%3Aeq%3Aen_US&sort.q5=totalpositivefeedbackcount%3Adesc&include.q5=authors%2Creviews%2Cproducts&filter_reviews.q5=contentlocale%3Aeq%3Aen_US&limit.q5=1&callback=BV._internal.dataHandler0'
         url = url.replace('==**==', product_id)
-        res = requests.get(url=url)
 
         try:
+            res = requests.get(url=url)
             quantity_ = json.loads(res.text[26:-1])['BatchedResults']['q0']['Results'][0]
         except Exception, e:
-            print '==============================', res.json()
-            if 'errorMessage' in res.json():
-                return 0
+            print '=============================='
+            quantity_ = {
+                'Description': '',
+                'FilteredReviewStatistics': {
+                    'AverageOverallRating': '',
+                    'TotalReviewCount': ''
+                } 
+            }
+
         return quantity_

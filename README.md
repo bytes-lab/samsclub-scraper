@@ -36,7 +36,12 @@
 	sudo ln -sf /usr/local/share/$PHANTOM_JS/bin/phantomjs /usr/local/bin
 	phantomjs --version
 
-#### Run celery:
+#### Run celery for store products and scraping:
+	cd smasclub_site/samsclub_scraper/samsclub_scraper
+	export C_FORCE_ROOT="true"
+	celery -A tasks worker --loglevel=info
+
+	cd smasclub_site/samsclub_scraper
 	export C_FORCE_ROOT="true"
 	celery worker -l info -A start --beat
 
