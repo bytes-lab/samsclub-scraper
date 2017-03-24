@@ -100,7 +100,8 @@ class SamsclubSpider(scrapy.Spider):
             'promo': promo,
             'special': response.meta['model_num'].replace(u'\xa0',''),
             'quantity': quantity,
-            'min_quantity': 1
+            'min_quantity': 1,
+            'url': base_url
         }        
 
     def get_real_quantity(self, referer, sku_id, product_id):
