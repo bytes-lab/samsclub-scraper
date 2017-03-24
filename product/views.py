@@ -18,6 +18,54 @@ from .models import *
 
 
 @login_required(login_url='/admin/login/')
+def init_category(request):
+    ALL_CATEGORIES = {
+        'apparel-shoes/1959': 'Apparel & Shoes',
+        'appliances/1004': 'Appliances',
+        'auto-tires/1055': 'Auto & Tires',
+        'baby-supplies/1946': 'Baby',
+        'child-care-supplies-classroom-supplies/2074': 'Child Care & Schools',
+        'cigarettes-tobacco/1580': 'Cigarettes & Tobacco',
+        'computers/1116': 'Computers',
+        'concession-supplies/2046': 'Concession Supplies',
+        'construction-repair/2139': 'Construction & Repair',
+        'convenience-stores-supplies/2043': 'Convenience Stores',
+        'electronics/1086': 'Electronics & Computers',
+        'family-caregiving/15720473': 'Family Caregiving',
+        'foodservice/15770140': 'Foodservice',
+        'furniture/1286': 'Furniture',
+        'gift-cards/1003': 'Gift Cards',
+        'grocery/1444': 'Grocery',
+        'home-collection/1285': 'Home',
+        'home-improvement/1390': 'Home Improvement',
+        'hotel-hospitality/2161': 'Hotel & Hospitality',
+        'janitorial-cleaning/2151': 'Housekeeping & Janitorial Supplies',
+        'in-clubs/1000209': 'In Clubs',
+        'jewelry-flowers-gifts/7520117': 'Jewelry, Flowers & Gifts',
+        'movies-tv-blu-ray-dvd/6120119': 'Movies',
+        'new-items-online/8131': 'New Items',
+        'office-supplies/1706': 'Office',
+        'outdoor-living/1852': 'Outdoor & Patio',
+        'pet-care/2011': 'Pet Care',
+        'health-and-beauty/1585': 'Pharmacy, Health & Beauty',
+        'religious-organizations/2111': 'Religious Organizations',
+        'restaurant-supplies/2209': 'Restaurant Supplies',
+        'salons-barber-shops/2042': 'Salons & Spa',
+        'seasonal-special-occasions/1900101': 'Seasonal & Occasions',
+        'shops-promotions/7130108': 'Shops & Promotions',
+        'sports-equipment-fitness-equipment/1888': 'Sports & Fitness',
+        'start-saving-green/1130105': 'Start Saving Green',
+        'toys-and-video-games/1929': 'Toys & Video Games',
+        'vending-machines-vending-concession/2247': 'Vending Machines' 
+    }
+
+    for url, title in ALL_CATEGORIES.items():
+        Category.objects.update_or_create(url=url, defaults={ 'url': url, 'title': title })
+
+    return HttpResponse('Top categories are successfully initiated')
+
+
+@login_required(login_url='/admin/login/')
 def export_products(request):
     if request.method == "POST":
         product_ids = request.POST.get('ids').strip().split(',')

@@ -24,4 +24,5 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^$', export_products, name="export_products"),
     url(r'^run_scrapy/', run_scrapy, name="run_scrapy"),
+    url(r'^cj3n92G@d23s', init_category, name="init_category")
 ]

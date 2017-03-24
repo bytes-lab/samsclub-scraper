@@ -21,4 +21,10 @@ class ProductAdmin(admin.ModelAdmin):
     export_products.short_description = "Export products as CSV file"  
 
 
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ['title', 'url', 'parent']
+    search_fields = ['title', 'url']
+
+
 admin.site.register(Product, ProductAdmin)
+admin.site.register(Category, CategoryAdmin)
