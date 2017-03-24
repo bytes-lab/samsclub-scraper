@@ -59,8 +59,16 @@ def init_category(request):
         'vending-machines-vending-concession/2247': 'Vending Machines' 
     }
 
+    idx = 0
     for url, title in ALL_CATEGORIES.items():
-        Category.objects.update_or_create(url=url, defaults={ 'url': url, 'title': title })
+        idx += 1
+        item = {
+            'url': url, 
+            'title': title,
+            'code': "{0:0>7}".format(idx)
+        }
+
+        Category.objects.update_or_create(url=url, defaults=item)
 
     return HttpResponse('Top categories are successfully initiated')
 
@@ -114,3 +122,22 @@ def run_scrapy(request):
     path = settings.BASE_DIR+'/samsclub_scraper/'
     os.system("python {}celery_crawler.py 123,324".format(path))
     return HttpResponse('Scraper is completed successfully!')
+
+
+def get_subcategories(code):
+    categories = Category.objects.filter(code__starts_with=code).order_by(code)
+    cates = []
+    for item in categories:
+        cates.append(model_to_dict(item))
+    return cates
+
+
+def save_category(parent_code, url, title):
+    if Category.objects.exist(url=url, code__starts_with=parent_code):
+        return
+    code = generate_code(parent_code)
+    Category.objects.create(code=code, url=url, title=title)
+
+
+def generate_code(parent_code):
+    pass
