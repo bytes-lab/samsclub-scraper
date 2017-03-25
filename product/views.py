@@ -60,7 +60,7 @@ def init_category(request):
     }
 
     for url, title in ALL_CATEGORIES.items():
-        create_category('0000', url, title)
+        create_category(None, url, title)
 
     return HttpResponse('Top categories are successfully initiated')
 
@@ -116,30 +116,17 @@ def run_scrapy(request):
     return HttpResponse('Scraper is completed successfully!')
 
 
-def get_subcategories(code):
-    categories = Category.objects.filter(code__startswith=code).order_by('code')
-    cates = []
-    for item in categories:
-        cates.append(model_to_dict(item))
-    return cates
+def get_subcategories(parent=None, title=''):
+    """
+    return child categories
+    """
+    categories = Category.objects.filter(parent=parent, title__contains=title)
+    return [item.url for item in categories]
 
 
-def create_category(parent_code, url, title):
-    if Category.objects.filter(url=url, code__startswith=parent_code).exists():
-        return
-    code = generate_code(parent_code)
-    Category.objects.create(code=code, url=url, title=title)
-    return { 'code': code, 'url': url, 'title': title }
-
-
-def generate_code(parent_code):
-    regex = r"^" + re.escape(parent_code) + r"\d{3}$"
-
-    last_code = Category.objects.filter(code__regex=regex) \
-                                .order_by('-code') \
-                                .first()
-
-    new_num = 1
-    if last_code:
-        new_num = int(last_code.code[-3:]) + 1
-    return "{0}{1:0>3}".format(parent_code, new_num)
+def create_category(parent, url, title):
+    try:
+        Category.objects.create(parent_id=parent, url=url, title=title)
+    except Exception, e:
+        print str(e)
+        print parent, url, title, '@@@@@@@@@@@@@'

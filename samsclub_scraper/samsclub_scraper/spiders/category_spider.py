@@ -24,12 +24,12 @@ class CategorySpider(scrapy.Spider):
 
     def __init__(self, param=[]):
         self.param = param
-        self.categories = get_subcategories('0000001')
+        self.categories = get_subcategories()
 
     def start_requests(self):
         cate_requests = []
         for item in self.categories:
-            request = scrapy.Request('https://www.samsclub.com/sams/{}.cp'.format(item['url']), 
+            request = scrapy.Request('https://www.samsclub.com/sams/{}.cp'.format(item), 
                                      headers=self.header, callback=self.parse)
             request.meta['category'] = item
             cate_requests.append(request)
@@ -42,10 +42,10 @@ class CategorySpider(scrapy.Spider):
         cates_title = response.css('ul.catLeftNav li a::text').extract()
 
         if cates:
-            upper_category = response.meta['category']
+            parent = response.meta['category']
             for item in zip(cates_url, cates_title):
-                new_item = create_category(parent_code=upper_category['code'], url=item[0], title=item[1])
+                create_category(parent=parent, url=item[0], title=item[1])
                 url_ = 'https://www.samsclub.com{}.cp'.format(item[0])
                 request = scrapy.Request(url_, headers=self.header, callback=self.parse)
-                request.meta['category'] = new_item
+                request.meta['category'] = item[0]
                 yield request

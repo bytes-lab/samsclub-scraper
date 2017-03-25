@@ -22,7 +22,7 @@ class ProductAdmin(admin.ModelAdmin):
 
 
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ['title', 'url', 'code']
+    list_display = ['title', 'url', 'parent']
     search_fields = ['title', 'url']
 
 
