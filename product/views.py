@@ -1,4 +1,5 @@
 import os
+import re
 import csv
 import datetime
 import mimetypes
@@ -13,7 +14,6 @@ from django.forms.models import model_to_dict
 from django.http import HttpResponse
 from django.conf import settings
 
-from samsclub_scraper.celery_crawler import scrape_module
 from .models import *
 
 
@@ -59,16 +59,8 @@ def init_category(request):
         'vending-machines-vending-concession/2247': 'Vending Machines' 
     }
 
-    idx = 0
     for url, title in ALL_CATEGORIES.items():
-        idx += 1
-        item = {
-            'url': url, 
-            'title': title,
-            'code': "{0:0>7}".format(idx)
-        }
-
-        Category.objects.update_or_create(url=url, defaults=item)
+        create_category('0000', url, title)
 
     return HttpResponse('Top categories are successfully initiated')
 
@@ -125,19 +117,29 @@ def run_scrapy(request):
 
 
 def get_subcategories(code):
-    categories = Category.objects.filter(code__starts_with=code).order_by(code)
+    categories = Category.objects.filter(code__startswith=code).order_by('code')
     cates = []
     for item in categories:
         cates.append(model_to_dict(item))
     return cates
 
 
-def save_category(parent_code, url, title):
-    if Category.objects.exist(url=url, code__starts_with=parent_code):
+def create_category(parent_code, url, title):
+    if Category.objects.filter(url=url, code__startswith=parent_code).exists():
         return
     code = generate_code(parent_code)
     Category.objects.create(code=code, url=url, title=title)
+    return { 'code': code, 'url': url, 'title': title }
 
 
 def generate_code(parent_code):
-    pass
+    regex = r"^" + re.escape(parent_code) + r"\d{3}$"
+
+    last_code = Category.objects.filter(code__regex=regex) \
+                                .order_by('-code') \
+                                .first()
+
+    new_num = 1
+    if last_code:
+        new_num = int(last_code.code[-3:]) + 1
+    return "{0}{1:0>3}".format(parent_code, new_num)

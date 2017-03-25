@@ -14,6 +14,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "samsclub_site.settings")
 django.setup()
 
 from product.models import *
+from product.views import *
 
 class SamsclubSpider(scrapy.Spider):
     name = "samsclub"
@@ -184,3 +185,4 @@ class SamsclubSpider(scrapy.Spider):
             }
 
         return quantity_
+

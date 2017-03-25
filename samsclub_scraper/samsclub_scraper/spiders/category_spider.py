@@ -3,7 +3,6 @@ import re
 import os
 import django
 import scrapy
-import requests
 import json
 from os import sys, path
 from selenium import webdriver
@@ -16,7 +15,7 @@ django.setup()
 from product.models import *
 from product.views import *
 
-class SamsclubSpider(scrapy.Spider):
+class CategorySpider(scrapy.Spider):
     name = "samsclub_category"
 
     header = {
@@ -25,14 +24,16 @@ class SamsclubSpider(scrapy.Spider):
 
     def __init__(self, param=[]):
         self.param = param
-        self.categories = get_subcategories('0000')
+        self.categories = get_subcategories('0000001')
 
     def start_requests(self):
+        cate_requests = []
         for item in self.categories:
-            request = scrapy.Request('https://www.samsclub.com/sams/{}.cp'.format(item), 
+            request = scrapy.Request('https://www.samsclub.com/sams/{}.cp'.format(item['url']), 
                                      headers=self.header, callback=self.parse)
             request.meta['category'] = item
-            return request
+            cate_requests.append(request)
+        return cate_requests
 
 
     def parse(self, response):
@@ -43,6 +44,8 @@ class SamsclubSpider(scrapy.Spider):
         if cates:
             upper_category = response.meta['category']
             for item in zip(cates_url, cates_title):
-                save_category(parent_code=upper_category.code, url=item[0], title=item[1])
+                new_item = create_category(parent_code=upper_category['code'], url=item[0], title=item[1])
                 url_ = 'https://www.samsclub.com{}.cp'.format(item[0])
-                yield scrapy.Request(url_, headers=self.header, callback=self.parse)
+                request = scrapy.Request(url_, headers=self.header, callback=self.parse)
+                request.meta['category'] = new_item
+                yield request
