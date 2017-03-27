@@ -40,12 +40,11 @@ class SamsclubSpider(scrapy.Spider):
 
     def start_requests(self):
         if mode in [0, 1]:
-            return [scrapy.Request('https://www.samsclub.com/sams/{}.cp'.format(item), headers=self.header, callback=self.parse) for item in self.categories]
+            return [scrapy.Request('https://www.samsclub.com{}.cp'.format(item), headers=self.header, callback=self.parse) for item in self.categories]
         else:
             for product in self.products:
                 model_num = product.special
-                detail_link = 'https://www.samsclub.com' + product.url              
-                request = scrapy.Request(detail_link, headers=self.header, callback=self.detail)
+                request = scrapy.Request(product.url, headers=self.header, callback=self.detail)
                 request.meta['model_num'] = model_num
                 yield request
 

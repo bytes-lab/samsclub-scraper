@@ -29,7 +29,7 @@ class CategorySpider(scrapy.Spider):
     def start_requests(self):
         cate_requests = []
         for item in self.categories:
-            request = scrapy.Request('https://www.samsclub.com/sams/{}.cp'.format(item), 
+            request = scrapy.Request('https://www.samsclub.com{}.cp'.format(item), 
                                      headers=self.header, callback=self.parse)
             request.meta['category'] = item
             cate_requests.append(request)
