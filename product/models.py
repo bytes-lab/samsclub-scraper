@@ -11,6 +11,16 @@ class Category(models.Model):
     def __unicode__(self):
         return self.title
 
+    def get_all_children(self, include_self=True):
+        r = []
+        if include_self:
+            r.append(self)
+        for c in Category.objects.filter(parent=self):
+            _r = c.get_all_children(include_self=True)
+            if 0 < len(_r):
+                r.extend(_r)
+        return r
+
 
 class Product(models.Model):
     id = models.IntegerField(primary_key=True)

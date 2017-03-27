@@ -23,16 +23,31 @@ class SamsclubSpider(scrapy.Spider):
         "User-Agent":"Mozilla/5.0 (Windows NT 10.0; WOW64; rv:52.0) Gecko/20100101 Firefox/52.0",
     }
 
-    def __init__(self, param=[]):
-        self.param = param
+    def __init__(self, mode=0, categories=[], products=[]):
+        self.categories = categories
+        self.excludes = []        
+        self.products = products
+
+        # categories = [
+        #     # 'spring-renewal/5160101',
+        #     'fine-writing-supplies1/9165'
+        #     # 'office-supplies/1706'
+        # ]
+        if mode == 0:
+            self.categories = get_subcategories()
+        elif mode == 1:            
+            self.excludes = get_category_products(self.category)
 
     def start_requests(self):
-        categories = [
-            'spring-renewal/5160101',
-            # 'fine-writing-supplies/9165'
-            # 'office-supplies/1706'
-        ]
-        return [scrapy.Request('https://www.samsclub.com/sams/{}.cp'.format(item), headers=self.header, callback=self.parse) for item in categories]
+        if mode in [0, 1]:
+            return [scrapy.Request('https://www.samsclub.com/sams/{}.cp'.format(item), headers=self.header, callback=self.parse) for item in self.categories]
+        else:
+            for product in self.products:
+                model_num = product.special
+                detail_link = 'https://www.samsclub.com' + product.url              
+                request = scrapy.Request(detail_link, headers=self.header, callback=self.detail)
+                request.meta['model_num'] = model_num
+                yield request
 
     def parse(self, response):
         cates = response.css('ul.catLeftNav li a::attr(href)').extract()
@@ -45,12 +60,14 @@ class SamsclubSpider(scrapy.Spider):
                 yield scrapy.Request(url_, headers=self.header, callback=self.parse)
         elif products:
             for product in products:
-                model_num = product.css('span.list-view-modelnumber::text').extract_first()
-                detail_link = 'https://www.samsclub.com' + product.css('a.cardProdLink::attr(href)').extract_first()
+                id = product.css('span.list-view-itemnumber::text').extract_first()
+                if not int(id) in self.excludes:
+                    model_num = product.css('span.list-view-modelnumber::text').extract_first()
+                    detail_link = 'https://www.samsclub.com' + product.css('a.cardProdLink::attr(href)').extract_first()
 
-                request = scrapy.Request(detail_link, headers=self.header, callback=self.detail)
-                request.meta['model_num'] = model_num
-                yield request
+                    request = scrapy.Request(detail_link, headers=self.header, callback=self.detail)
+                    request.meta['model_num'] = model_num
+                    yield request
 
             # for other pages / pagination
             offset = response.meta.get('offset', 0)

@@ -130,3 +130,11 @@ def create_category(parent, url, title):
     except Exception, e:
         print str(e)
         print parent, url, title, '@@@@@@@@@@@@@'
+
+
+def get_category_products(category):
+    result = []
+    for cate in category.get_all_children():
+        for item in Product.objects.filter(category=cate):
+            result.append(item.url)
+    return result
