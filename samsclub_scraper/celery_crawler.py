@@ -7,7 +7,7 @@ from samsclub_scraper.spiders.samsclub_spider import SamsclubSpider
 def scrape_module():
     params = sys.argv[1] if len(sys.argv) > 1 else None
     crawler = CrawlerProcess(get_project_settings())
-    crawler.crawl(SamsclubSpider, param=params)
+    crawler.crawl(SamsclubSpider, mode=1, categories=['/sams/vacuum-cleaners/2780107'])
     crawler.start()
 
 if __name__=='__main__':

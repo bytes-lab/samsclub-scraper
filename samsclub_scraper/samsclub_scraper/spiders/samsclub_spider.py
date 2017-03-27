@@ -24,6 +24,7 @@ class SamsclubSpider(scrapy.Spider):
     }
 
     def __init__(self, mode=0, categories=[], products=[]):
+        self.mode = int(mode)
         self.categories = categories
         self.excludes = []        
         self.products = products
@@ -36,17 +37,20 @@ class SamsclubSpider(scrapy.Spider):
         if mode == 0:
             self.categories = get_subcategories()
         elif mode == 1:            
-            self.excludes = get_category_products(self.category)
+            self.excludes = get_category_products(self.categories[0])
+        print self.mode, self.categories, self.products, '@@@@@@@@@'
 
     def start_requests(self):
-        if mode in [0, 1]:
+        if self.mode in [0, 1]:
             return [scrapy.Request('https://www.samsclub.com{}.cp'.format(item), headers=self.header, callback=self.parse) for item in self.categories]
         else:
+            product_requests = []
             for product in self.products:
-                model_num = product.special
                 request = scrapy.Request(product.url, headers=self.header, callback=self.detail)
-                request.meta['model_num'] = model_num
-                yield request
+                request.meta['model_num'] = product.special
+                request.meta['category'] = product.category
+                product_requests.append(request)
+            return product_requests
 
     def parse(self, response):
         cates = response.css('ul.catLeftNav li a::attr(href)').extract()
@@ -59,13 +63,14 @@ class SamsclubSpider(scrapy.Spider):
                 yield scrapy.Request(url_, headers=self.header, callback=self.parse)
         elif products:
             for product in products:
-                id = product.css('span.list-view-itemnumber::text').extract_first()
+                id = product.css('span.list-view-itemnumber::text').extract_first()[9:]
                 if not int(id) in self.excludes:
                     model_num = product.css('span.list-view-modelnumber::text').extract_first()
                     detail_link = 'https://www.samsclub.com' + product.css('a.cardProdLink::attr(href)').extract_first()
 
                     request = scrapy.Request(detail_link, headers=self.header, callback=self.detail)
                     request.meta['model_num'] = model_num
+                    request.meta['category'] = response.url.split('.cp')[0][24:]
                     yield request
 
             # for other pages / pagination
@@ -118,6 +123,7 @@ class SamsclubSpider(scrapy.Spider):
             'special': response.meta['model_num'].replace(u'\xa0',''),
             'quantity': quantity,
             'min_quantity': 1,
+            'category_id': response.meta['category'],
             'url': base_url
         }        
 

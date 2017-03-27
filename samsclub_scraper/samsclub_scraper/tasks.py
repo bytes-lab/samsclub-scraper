@@ -22,4 +22,4 @@ def store_product(item):
     try:
         Product.objects.update_or_create(id=item['id'], defaults=item)
     except Exception, e:
-        pass
+        print str(e), '#############3'
