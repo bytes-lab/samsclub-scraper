@@ -7,10 +7,13 @@ from celery.task import periodic_task
 
 import os
 
-app = Celery('tasks', backend='amqp',
-             broker='amqp://guest@localhost//')
+# app = Celery('tasks', backend='amqp',
+#              broker='amqp://guest@localhost//')
 
 
-@periodic_task(run_every=timedelta(minutes=1))
-def scrape_samsclub():
-    os.system("python celery_crawler.py ALL")
+# @periodic_task(run_every=timedelta(minutes=1))
+# def scrape_samsclub():
+#     os.system("python celery_crawler.py ALL")
+
+a = os.system("python celery_crawler.py ALL 912734123")
+print a, '#####################3'

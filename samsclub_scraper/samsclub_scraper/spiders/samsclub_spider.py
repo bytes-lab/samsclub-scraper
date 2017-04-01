@@ -29,16 +29,10 @@ class SamsclubSpider(scrapy.Spider):
         self.excludes = []        
         self.products = products
 
-        # categories = [
-        #     # 'spring-renewal/5160101',
-        #     'fine-writing-supplies1/9165'
-        #     # 'office-supplies/1706'
-        # ]
         if mode == 0:
             self.categories = get_subcategories()
         elif mode == 1:            
             self.excludes = get_category_products(self.categories[0])
-        print self.mode, self.categories, self.products, '@@@@@@@@@'
 
     def start_requests(self):
         if self.mode in [0, 1]:
@@ -207,4 +201,3 @@ class SamsclubSpider(scrapy.Spider):
             }
 
         return quantity_
-
