@@ -5,6 +5,7 @@ import django
 import scrapy
 import requests
 import json
+import datetime
 from os import sys, path
 from selenium import webdriver
 from scrapy.selector import Selector
@@ -23,7 +24,8 @@ class SamsclubSpider(scrapy.Spider):
         "User-Agent":"Mozilla/5.0 (Windows NT 10.0; WOW64; rv:52.0) Gecko/20100101 Firefox/52.0",
     }
 
-    def __init__(self, mode=0, categories=[], products=[]):
+    def __init__(self, task_id, mode=0, categories=[], products=[]):
+        self.task_id = int(task_id)
         self.mode = int(mode)
         self.categories = categories
         self.excludes = []        
@@ -47,6 +49,10 @@ class SamsclubSpider(scrapy.Spider):
             return product_requests
 
     def parse(self, response):
+        print '#########', self.task_id
+        if ScrapyTask.objects.get(id=self.task_id).status == 3:
+            return
+
         cates = response.css('ul.catLeftNav li a::attr(href)').extract()
         cates = [item.split('.cp')[0] for item in cates]
         products = response.css('div.sc-product-card')
@@ -81,6 +87,9 @@ class SamsclubSpider(scrapy.Spider):
 
 
     def detail(self, response):
+        if ScrapyTask.objects.get(id=self.task_id).status == 3:
+            return
+
         sel = Selector(response)
         item_id = response.css('input[id=mbxProductId]::attr(value)').extract_first()
         sku_id = response.css('input[id=pSkuId]::attr(value)').extract_first()
@@ -201,3 +210,9 @@ class SamsclubSpider(scrapy.Spider):
             }
 
         return quantity_
+
+    def update_run_time(self):
+        task = ScrapyTask.objects.get(id=self.task_id)
+        task.last_run = datetime.datetime.now()
+        task.update()
+
