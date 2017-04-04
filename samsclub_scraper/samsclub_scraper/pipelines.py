@@ -5,6 +5,7 @@ class SamsclubScraperPipeline(object):
         print spider.mode, '@@@@@@@@@@'
 
     def process_item(self, item, spider):
+        print '###################'
         store_product.apply_async(kwargs={'item': item})
         return item
 

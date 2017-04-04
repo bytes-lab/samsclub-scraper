@@ -132,7 +132,7 @@ def create_category(parent, url, title):
         print parent, url, title, '@@@@@@@@@@@@@'
 
 
-def get_category_products(category):
+def get_category_products(category, attr='url'):
     """
     param: category as url
     """
@@ -140,5 +140,11 @@ def get_category_products(category):
     result = []
     for cate in category.get_all_children():
         for item in Product.objects.filter(category=cate):
-            result.append(item.url)
+            result.append(getattr(item, attr))
     return result
+
+
+def set_old_category_products(category):
+    category = Category.objects.get(url=category)
+    for cate in category.get_all_children():
+        Product.objects.filter(category=cate).update(is_new=False)

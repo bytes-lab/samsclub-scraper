@@ -43,16 +43,10 @@ class Product(models.Model):
     min_quantity = models.IntegerField()
     updated_at = models.DateTimeField(auto_now=True)
     url = models.CharField(max_length=200)
-    revision = models.IntegerField(default=0)
-    is_available = models.BooleanField()
+    is_new = models.BooleanField(default=True)
 
     def __unicode__(self):
         return self.title
-
-    def save(self, *args, **kwargs):
-        self.revision= self.revision + 1
-        self.is_available = True
-        super(Product, self).save(*args, **kwargs)
 
 
 MODE = (
@@ -64,9 +58,8 @@ MODE = (
 STATUS = (
     (0, 'To be started'),
     (1, 'Running'),
-    (2, 'To be stoped'),
+    (2, 'Sleeping'),
     (3, 'Stoped'),      # ready for export
-    (4, 'Interval')
 )
 
 class ScrapyTask(models.Model):
@@ -95,22 +88,12 @@ class ScrapyTask(models.Model):
     def delete(self, *args, **kwargs):
         self.status = 3
         self.update()
-            # super(ScrapyTask, self).delete(*args, **kwargs)
 
     def run_scraper(self):
-        print "python {}/samsclub_scraper/celery_crawler.py {} {} {} {}" \
-                  .format(settings.BASE_DIR, self.pk, self.mode, 
-                          self.category_id or 'None', 
-                          self.products or 'None'), '@@@@@@@@@@@'
-        path = '{}/samsclub_scraper/celery_crawler.py'.format(settings.BASE_DIR)
+        path = settings.BASE_DIR + '/samsclub_scraper/celery_crawler.py'
         subprocess.Popen(["python", 
                           path, 
                           str(self.pk), 
                           str(self.mode), 
                           self.category_id or 'None', 
                           self.products or 'None'])
-
-        # os.system("python {}/samsclub_scraper/celery_crawler.py {} {} {} {}" \
-        #           .format(settings.BASE_DIR, 22, self.mode, 
-        #                   self.category_id or 'None', 
-        #                   self.products or 'None'))

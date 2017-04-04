@@ -10,6 +10,8 @@ from os import sys, path
 from selenium import webdriver
 from scrapy.selector import Selector
 
+from ..tasks import store_product
+
 sys.path.append(path.dirname(path.dirname(path.dirname(path.dirname(path.abspath(__file__))))))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "samsclub_site.settings")
 django.setup()
@@ -33,7 +35,8 @@ class SamsclubSpider(scrapy.Spider):
 
         if mode == 0:
             self.categories = get_subcategories()
-        elif mode == 1:            
+        elif mode == 1:
+            set_old_category_products(self.categories[0])            
             self.excludes = get_category_products(self.categories[0])
 
     def start_requests(self):
@@ -49,8 +52,7 @@ class SamsclubSpider(scrapy.Spider):
             return product_requests
 
     def parse(self, response):
-        print '#########', self.task_id
-        if ScrapyTask.objects.get(id=self.task_id).status == 3:
+        if self.stop_scrapy():
             return
 
         cates = response.css('ul.catLeftNav li a::attr(href)').extract()
@@ -87,7 +89,7 @@ class SamsclubSpider(scrapy.Spider):
 
 
     def detail(self, response):
-        if ScrapyTask.objects.get(id=self.task_id).status == 3:
+        if self.stop_scrapy():
             return
 
         sel = Selector(response)
@@ -112,7 +114,7 @@ class SamsclubSpider(scrapy.Spider):
         review_count = detail_info['FilteredReviewStatistics']['TotalReviewCount']
         quantity = self.get_real_quantity(base_url, sku_id, item_id)
 
-        yield {
+        item = {
             'id': response.css('input[id=itemNo]::attr(value)').extract_first(),
             'title': title,
             'price': '$'+price if price else 0,
@@ -129,6 +131,8 @@ class SamsclubSpider(scrapy.Spider):
             'category_id': response.meta['category'],
             'url': base_url
         }        
+        store_product.apply_async(kwargs={'item': item})
+        yield item
 
     def get_real_quantity(self, referer, sku_id, product_id):
         url = 'https://www.samsclub.com/sams/shop/product.jsp?productId={}&_DARGS=/sams/shop/product/moneybox/moneyBoxButtons.jsp'.format(product_id)
@@ -214,5 +218,9 @@ class SamsclubSpider(scrapy.Spider):
     def update_run_time(self):
         task = ScrapyTask.objects.get(id=self.task_id)
         task.last_run = datetime.datetime.now()
+        task.status = 2 if task.mode == 2 else 3
         task.update()
 
+    def stop_scrapy(self):
+        st = ScrapyTask.objects.filter(id=self.task_id).first()
+        return not st or st.status == 3

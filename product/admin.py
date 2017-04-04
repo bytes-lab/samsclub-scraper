@@ -3,8 +3,10 @@ from django.http import HttpResponse, HttpResponseRedirect
 
 from django.shortcuts import render
 from django import forms
+from django.contrib import messages
 
 from .models import *
+from .views import *
 
 class ProductAdmin(admin.ModelAdmin):
     list_display = ['id', 'title', 'price', 'quantity', 'min_quantity', 
@@ -57,7 +59,29 @@ class ScrapyTaskAdmin(admin.ModelAdmin):
     search_fields = ['title']
     readonly_fields = ['status', 'last_run']
     form = ScrapyTaskForm
+    actions = ['export_products']
 
+    def export_products(self, request, queryset):
+        selected = request.POST.getlist(admin.ACTION_CHECKBOX_NAME)
+        if len(selected) > 1:
+            messages.error(request, "Choose only one instance.")
+        else:
+            st = queryset.first()
+            if st.mode == 1:
+                result = []
+                for cate in st.category.get_all_children():
+                    # only for new products
+                    for item in Product.objects.filter(category=cate, 
+                                                       is_new=True):
+                        result.append(str(item.id))
+                ids = ','.join(result)
+            else:
+                ids = st.products
+            fields = [f.name for f in Product._meta.get_fields() 
+                      if f.name not in ['updated_at', 'is_new']]
+            return render(request, 'product_properties.html', locals())    
+
+    export_products.short_description = "Export products as CSV file"  
 
 admin.site.register(Product, ProductAdmin)
 admin.site.register(Category, CategoryAdmin)
