@@ -4,6 +4,7 @@ import csv
 import datetime
 import mimetypes
 import scrapy
+import subprocess
 
 from django.shortcuts import render
 from django.utils.encoding import smart_str
@@ -111,9 +112,15 @@ def export_products(request):
 
 
 def run_scrapy(request):
-    path = settings.BASE_DIR+'/samsclub_scraper/'
-    os.system("python {}celery_crawler.py 123,324".format(path))
-    return HttpResponse('Scraper is completed successfully!')
+    path = settings.BASE_DIR + '/samsclub_scraper/celery_crawler.py'
+    subprocess.Popen(["python", 
+                      path, 
+                      '0', 
+                      '0', 
+                      'None', 
+                      'None'])
+
+    return HttpResponse('Scraper is triggered successfully!')
 
 
 def get_subcategories(parent=None, title=''):
@@ -129,7 +136,6 @@ def create_category(parent, url, title):
         Category.objects.create(parent_id=parent, url=url, title=title)
     except Exception, e:
         print str(e)
-        # print parent, url, title, '@@@@@@@@@@@@@'
 
 
 def get_category_products(category, attr='url'):

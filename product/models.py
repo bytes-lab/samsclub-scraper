@@ -56,10 +56,10 @@ MODE = (
 )
 
 STATUS = (
-    (0, 'To be started'),
+    (0, 'Finished'),
     (1, 'Running'),
     (2, 'Sleeping'),
-    (3, 'Stoped'),      # ready for export
+    (3, 'Stopped'),      # ready for export
 )
 
 class ScrapyTask(models.Model):
@@ -86,7 +86,7 @@ class ScrapyTask(models.Model):
         super(ScrapyTask, self).save()
 
     def delete(self, *args, **kwargs):
-        self.status = 3
+        self.status = 3     # Stopped
         self.update()
 
     def run_scraper(self):

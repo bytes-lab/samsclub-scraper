@@ -44,12 +44,13 @@ class ScrapyTaskForm(forms.ModelForm):
                 raise forms.ValidationError("Category should be provided in " 
                                             + "Category mode.")
         elif mode == 2:
+            products = products.replace('\n', ',')
             for item in products.split(','):
                 try:
-                    a = int(item)
+                    Product.objects.get(id=int(item))
                 except Exception, e:
                     raise forms.ValidationError("Products should be comma "
-                        + "seperated product id list e.g) 12432, 12424, ...")
+                        + "seperated VALID product id list e.g) 12432, 12424, ...")
         return self.cleaned_data
 
 
@@ -60,6 +61,7 @@ class ScrapyTaskAdmin(admin.ModelAdmin):
     readonly_fields = ['status', 'last_run']
     form = ScrapyTaskForm
     actions = ['export_products']
+    list_filter = ('status',)
 
     def export_products(self, request, queryset):
         selected = request.POST.getlist(admin.ACTION_CHECKBOX_NAME)

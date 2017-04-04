@@ -38,14 +38,23 @@ class SamsclubSpider(scrapy.Spider):
         elif mode == 1:
             set_old_category_products(self.categories[0])            
             self.excludes = get_category_products(self.categories[0])
+        elif mode == 2:
+            products = products.replace('\n', ',')
+            products_ = [int(item) for item in products.split(',')]
+            self.products = Product.objects.filter(id__in=products_)
 
     def start_requests(self):
         if self.mode in [0, 1]:
-            return [scrapy.Request('https://www.samsclub.com{}.cp'.format(item), headers=self.header, callback=self.parse) for item in self.categories]
+            return [scrapy.Request('https://www.samsclub.com{}.cp'.format(item), 
+                                   headers=self.header, 
+                                   callback=self.parse) 
+                    for item in self.categories]
         else:
             product_requests = []
             for product in self.products:
-                request = scrapy.Request(product.url, headers=self.header, callback=self.detail)
+                request = scrapy.Request(product.url, 
+                                         headers=self.header, 
+                                         callback=self.detail)
                 request.meta['model_num'] = product.special
                 request.meta['category'] = product.category
                 product_requests.append(request)
@@ -220,11 +229,13 @@ class SamsclubSpider(scrapy.Spider):
         return quantity_
 
     def update_run_time(self):
-        task = ScrapyTask.objects.get(id=self.task_id)
-        task.last_run = datetime.datetime.now()
-        task.status = 2 if task.mode == 2 else 3
-        task.update()
+        if self.task_id:
+            task = ScrapyTask.objects.get(id=self.task_id)
+            task.last_run = datetime.datetime.now()
+            task.status = 2 if task.mode == 2 else 0       # Sleeping / Finished
+            task.update()
 
     def stop_scrapy(self):
-        st = ScrapyTask.objects.filter(id=self.task_id).first()
-        return not st or st.status == 3
+        if self.task_id:
+            st = ScrapyTask.objects.filter(id=self.task_id).first()
+            return not st or st.status == 3
