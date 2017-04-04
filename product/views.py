@@ -129,7 +129,7 @@ def create_category(parent, url, title):
         Category.objects.create(parent_id=parent, url=url, title=title)
     except Exception, e:
         print str(e)
-        print parent, url, title, '@@@@@@@@@@@@@'
+        # print parent, url, title, '@@@@@@@@@@@@@'
 
 
 def get_category_products(category, attr='url'):

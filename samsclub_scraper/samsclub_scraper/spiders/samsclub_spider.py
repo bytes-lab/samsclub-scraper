@@ -51,6 +51,9 @@ class SamsclubSpider(scrapy.Spider):
                 product_requests.append(request)
             return product_requests
 
+    def closed(self, reason):
+        self.update_run_time()
+
     def parse(self, response):
         if self.stop_scrapy():
             return
@@ -65,10 +68,11 @@ class SamsclubSpider(scrapy.Spider):
                 yield scrapy.Request(url_, headers=self.header, callback=self.parse)
         elif products:
             for product in products:
-                id = product.css('span.list-view-itemnumber::text').extract_first()[9:]
-                if not int(id) in self.excludes:
+                detail_link = 'https://www.samsclub.com' + product.css('a.cardProdLink::attr(href)').extract_first()
+                detail_link = detail_link.split('?')[0]
+
+                if not detail_link in self.excludes:
                     model_num = product.css('span.list-view-modelnumber::text').extract_first()
-                    detail_link = 'https://www.samsclub.com' + product.css('a.cardProdLink::attr(href)').extract_first()
 
                     request = scrapy.Request(detail_link, headers=self.header, callback=self.detail)
                     request.meta['model_num'] = model_num
