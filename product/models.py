@@ -68,7 +68,8 @@ class ScrapyTask(models.Model):
     status = models.IntegerField(choices=STATUS)
     category = models.ForeignKey(Category, blank=True, null=True)
     products = models.TextField(blank=True, null=True)
-    interval = models.PositiveIntegerField(validators=[MinValueValidator(5)],
+    interval = models.PositiveIntegerField("Interval (minutes)",
+                                           validators=[MinValueValidator(5)],
                                            default=10)
     created_at = models.DateTimeField(auto_now_add=True)
     last_run = models.DateTimeField(blank=True, null=True)

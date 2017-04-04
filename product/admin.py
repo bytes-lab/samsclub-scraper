@@ -42,7 +42,7 @@ class ScrapyTaskForm(forms.ModelForm):
         if mode == 1:
             if not category:
                 raise forms.ValidationError("Category should be provided in " 
-                                            + "Category mode.")
+                                          + "Category mode.")
         elif mode == 2:
             products = products.replace('\n', ',')
             for item in products.split(','):
@@ -58,10 +58,24 @@ class ScrapyTaskAdmin(admin.ModelAdmin):
     list_display = ['title', 'mode', 'status', 'interval', 'last_run',
                     'created_at']
     search_fields = ['title']
-    readonly_fields = ['status', 'last_run']
+    exclude = ['status', 'last_run']
     form = ScrapyTaskForm
     actions = ['export_products']
     list_filter = ('status',)
+
+    fieldsets = (
+        (None, {
+            'fields': ('title', 'mode')
+        }),
+        ('Category Mode', {
+            'classes': ('collapse',),
+            'fields': ('category',),
+        }),
+        ('Products Mode', {
+            'classes': ('collapse',),
+            'fields': ('products', 'interval',),
+        }),
+    )
 
     def export_products(self, request, queryset):
         selected = request.POST.getlist(admin.ACTION_CHECKBOX_NAME)
