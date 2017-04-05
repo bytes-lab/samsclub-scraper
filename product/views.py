@@ -107,7 +107,8 @@ def export_products(request):
         response['Content-Disposition'] = 'attachment; filename=%s/' % smart_str( os.path.basename( path ) ) # same here        
         return response
     else:
-        fields = [f.name for f in Product._meta.get_fields() if f.name not in ['updated_at']]
+        fields = [f.name for f in Product._meta.get_fields() 
+                  if f.name not in ['updated_at', 'is_new']]
         return render(request, 'product_properties.html', locals())    
 
 
