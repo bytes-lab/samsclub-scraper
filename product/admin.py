@@ -45,6 +45,7 @@ class ScrapyTaskForm(forms.ModelForm):
                 raise forms.ValidationError("Category should be provided in " 
                                           + "Category mode.")
         elif mode == 2:
+            # validate product IDs or file
             if products.strip():
                 products = products.replace('\n', ',')
                 for item in products.split(','):
