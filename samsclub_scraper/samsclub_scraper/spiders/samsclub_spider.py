@@ -35,6 +35,7 @@ class SamsclubSpider(scrapy.Spider):
 
         if mode == 0:
             self.categories = get_subcategories()
+            self.excludes = [item.url for item in Product.objects.all()]
         elif mode == 1:
             set_old_category_products(self.categories[0])            
             self.excludes = get_category_products(self.categories[0])
@@ -125,7 +126,11 @@ class SamsclubSpider(scrapy.Spider):
         rating = detail_info['FilteredReviewStatistics']['AverageOverallRating']
         rating = '{0:0.1f}'.format(float(rating)) if rating else 0
         review_count = detail_info['FilteredReviewStatistics']['TotalReviewCount']
-        quantity = self.get_real_quantity(base_url, sku_id, item_id)
+
+        if self.mode == 2:
+            quantity = self.get_real_quantity(base_url, sku_id, item_id)
+        else:
+            quantity = 9999
 
         item = {
             'id': response.css('input[id=itemNo]::attr(value)').extract_first(),
