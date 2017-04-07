@@ -23,7 +23,7 @@ class SamsclubSpider(scrapy.Spider):
     name = "samsclub"
 
     header = {
-        "User-Agent":"Mozilla/5.0 (Windows NT 10.0; WOW64; rv:52.0) Gecko/20100101 Firefox/52.0",
+        "User-Agent": "samsclub_scraper (+http://www.yourdomain.com)"
     }
 
     def __init__(self, task_id, mode=0, categories=[], products=[]):
