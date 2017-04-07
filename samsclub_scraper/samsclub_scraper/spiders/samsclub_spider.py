@@ -81,7 +81,7 @@ class SamsclubSpider(scrapy.Spider):
 
         if cates:
             parent = response.meta['category']
-
+            print parent, '@@@@@@@@@@@@@@@'
             for item in zip(cates_url, cates_title):
                 store_category.apply_async((parent, item[0], item[1]))
                 url_ = 'https://www.samsclub.com{}.cp'.format(item[0])

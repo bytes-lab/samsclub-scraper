@@ -100,7 +100,4 @@ class ScrapyTask(models.Model):
         path = settings.BASE_DIR + '/samsclub_scraper/celery_crawler.py'
         subprocess.Popen(["python", 
                           path, 
-                          str(self.pk), 
-                          str(self.mode), 
-                          self.category_id or 'None', 
-                          self.products or 'None'])
+                          str(self.pk)])
