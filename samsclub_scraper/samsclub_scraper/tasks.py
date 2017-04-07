@@ -23,3 +23,12 @@ def store_product(item):
         Product.objects.update_or_create(id=item['id'], defaults=item)
     except Exception, e:
         print str(e), '#############3'
+
+
+@app.task
+@task(ignore_result=True)
+def store_category(parent, url, title):
+    try:
+        Category.objects.create(parent_id=parent, url=url, title=title)
+    except Exception, e:
+        print str(e)

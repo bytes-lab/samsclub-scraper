@@ -10,7 +10,7 @@ from os import sys, path
 from selenium import webdriver
 from scrapy.selector import Selector
 
-from ..tasks import store_product
+from ..tasks import store_product, store_category
 
 sys.path.append(path.dirname(path.dirname(path.dirname(path.dirname(path.abspath(__file__))))))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "samsclub_site.settings")
@@ -26,31 +26,33 @@ class SamsclubSpider(scrapy.Spider):
         "User-Agent": "samsclub_scraper (+http://www.yourdomain.com)"
     }
 
-    def __init__(self, task_id, mode=1, categories=[], products=[]):
-        self.task_id = int(task_id)
-        self.mode = int(mode)
-        self.categories = categories
-        self.excludes = []        
-        self.products = products
+    def __init__(self, task_id):
+        self.task = ScrapyTask.objects.get(id=int(task_id))
 
-        if mode == 1:
-            set_old_category_products(self.categories[0])            
-            if categories == ['/']:
+        if self.task.mode == 1:
+            set_old_category_products(self.task.category)
+            if self.task.category.url == '/':
                 self.categories = get_subcategories()
                 self.excludes = [item.url for item in Product.objects.all()]
             else:
+                self.categories = [self.task.category.url]
                 self.excludes = get_category_products(self.categories[0])
-        elif mode == 2:
-            products = products.replace('\n', ',')
+        elif self.task.mode == 2:
+            products = self.task.products.replace('\n', ',')
             products_ = [int(item) for item in products.split(',')]
             self.products = Product.objects.filter(id__in=products_)
 
     def start_requests(self):
-        if self.mode == 1:
-            return [scrapy.Request('https://www.samsclub.com{}.cp'.format(item), 
-                                   headers=self.header, 
-                                   callback=self.parse) 
-                    for item in self.categories]
+        if self.task.mode == 1:
+            cate_requests = []
+            for item in self.categories:
+                request = scrapy.Request('https://www.samsclub.com{}.cp'.format(item),
+                                         headers=self.header,  
+                                         callback=self.parse)
+                request.meta['category'] = item
+                # request.meta['proxy'] = 'http://'+random.choice(self.proxy_pool)
+                cate_requests.append(request)
+            return cate_requests
         else:
             product_requests = []
             for product in self.products:
@@ -65,19 +67,28 @@ class SamsclubSpider(scrapy.Spider):
     def closed(self, reason):
         self.update_run_time()
         # export script
+        self.store_report()
 
     def parse(self, response):
         if self.stop_scrapy():
             return
 
         cates = response.css('ul.catLeftNav li a::attr(href)').extract()
-        cates = [item.split('.cp')[0] for item in cates]
+        cates_url = [item.split('.cp')[0] for item in cates]
+        cates_title = response.css('ul.catLeftNav li a::text').extract()
+
         products = response.css('div.sc-product-card')
 
         if cates:
-            for url in cates:
-                url_ = 'https://www.samsclub.com{}.cp'.format(url)
-                yield scrapy.Request(url_, headers=self.header, callback=self.parse)
+            parent = response.meta['category']
+
+            for item in zip(cates_url, cates_title):
+                store_category.apply_async((parent, item[0], item[1]))
+                url_ = 'https://www.samsclub.com{}.cp'.format(item[0])
+                request = scrapy.Request(url_, headers=self.header, callback=self.parse)
+                request.meta['category'] = item[0]
+                # request.meta['proxy'] = 'http://'+random.choice(self.proxy_pool)
+                yield request
         elif products:
             for product in products:
                 detail_link = 'https://www.samsclub.com' + product.css('a.cardProdLink::attr(href)').extract_first()
@@ -129,7 +140,7 @@ class SamsclubSpider(scrapy.Spider):
         rating = '{0:0.1f}'.format(float(rating)) if rating else 0
         review_count = detail_info['FilteredReviewStatistics']['TotalReviewCount']
 
-        if self.mode == 2:
+        if self.task.mode == 2:
             quantity = self.get_real_quantity(base_url, sku_id, item_id)
         else:
             quantity = 9999
@@ -236,31 +247,30 @@ class SamsclubSpider(scrapy.Spider):
         return quantity_
 
     def update_run_time(self):
-        if self.task_id:
-            task = ScrapyTask.objects.get(id=self.task_id)
-            task.last_run = datetime.datetime.now()
-            task.status = 2 if task.mode == 2 else 0       # Sleeping / Finished
-            task.update()
+        self.task.last_run = datetime.datetime.now()
+        self.task.status = 2 if self.task.mode == 2 else 0       # Sleeping / Finished
+        self.task.update()
 
-            if task.mode == 1:
-                result = []
-                for cate in task.category.get_all_children():
-                    # only for new products
-                    for item in Product.objects.filter(category=cate, 
-                                                       is_new=True):
-                        result.append(item)
-            else:
-                ids = task.products.replace('\n', ',')
-                ids = [int(item) for item in ids.split(',')]
-                result = Product.objects.filter(id__in=ids)
-            fields = [f.name for f in Product._meta.get_fields() 
-                      if f.name not in ['updated_at', 'is_new']]
+    def store_report(self):
+        if self.task.mode == 1:
+            result = []
+            for cate in self.task.category.get_all_children():
+                # only for new products
+                for item in Product.objects.filter(category=cate, 
+                                                   is_new=True):
+                    result.append(item)
+        else:
+            ids = self.task.products.replace('\n', ',')
+            ids = [int(item) for item in ids.split(',')]
+            result = Product.objects.filter(id__in=ids)
 
-            date = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-            path = '/home/exports/{}-{}.csv'.format(task.title, date)
-            write_report(result, path, fields)
+        fields = [f.name for f in Product._meta.get_fields() 
+                  if f.name not in ['updated_at', 'is_new']]
+
+        date = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        path = '/home/exports/{}-{}.csv'.format(self.task.title, date)
+        write_report(result, path, fields)
 
     def stop_scrapy(self):
-        if self.task_id:
-            st = ScrapyTask.objects.filter(id=self.task_id).first()
-            return not st or st.status == 3
+        st = ScrapyTask.objects.filter(id=self.task.id).first()
+        return not st or st.status == 3

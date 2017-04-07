@@ -141,6 +141,5 @@ def get_category_products(category, attr='url'):
 
 
 def set_old_category_products(category):
-    category = Category.objects.get(url=category)
     for cate in category.get_all_children():
         Product.objects.filter(category=cate).update(is_new=False)
