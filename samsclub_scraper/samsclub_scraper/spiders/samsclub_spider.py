@@ -144,7 +144,7 @@ class SamsclubSpider(scrapy.Spider):
             'category_id': response.meta['category'],
             'url': base_url
         }        
-        store_product.apply_async(kwargs={'item': item})
+        store_product.apply_async((item,))
         yield item
 
     def get_real_quantity(self, referer, sku_id, product_id):
