@@ -267,7 +267,7 @@ class SamsclubSpider(scrapy.Spider):
                   if f.name not in ['updated_at', 'is_new']]
 
         date = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        path = '/home/exports/{}-{}.csv'.format(self.task.title, date)
+        path = '/home/exports/samsclub-{}-{}.csv'.format(self.task.title, date)
         write_report(result, path, fields)
 
     def stop_scrapy(self):
