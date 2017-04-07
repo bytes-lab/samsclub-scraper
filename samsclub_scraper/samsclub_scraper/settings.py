@@ -22,7 +22,7 @@ USER_AGENT = 'samsclub_scraper (+http://www.yourdomain.com)'
 # ROBOTSTXT_OBEY = True
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-# CONCURRENT_REQUESTS = 32
+CONCURRENT_REQUESTS = 4
 # DOWNLOAD_TIMEOUT = 600
 # Configure a delay for requests for the same website (default: 0)
 # See http://scrapy.readthedocs.org/en/latest/topics/settings.html#download-delay
@@ -30,7 +30,7 @@ USER_AGENT = 'samsclub_scraper (+http://www.yourdomain.com)'
 # DOWNLOAD_DELAY = 0.5
 # The download delay setting will honor only one of:
 #CONCURRENT_REQUESTS_PER_DOMAIN = 16
-#CONCURRENT_REQUESTS_PER_IP = 16
+CONCURRENT_REQUESTS_PER_IP = 4
 
 # Disable cookies (enabled by default)
 #COOKIES_ENABLED = False
