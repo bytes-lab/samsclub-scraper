@@ -50,7 +50,6 @@ class Product(models.Model):
 
 
 MODE = (
-    # (0, 'One Time'),
     (1, 'Category'),
     (2, 'Products')
 )
@@ -68,6 +67,7 @@ class ScrapyTask(models.Model):
     status = models.IntegerField(choices=STATUS)
     category = models.ForeignKey(Category, blank=True, null=True)
     products = models.TextField(blank=True, null=True)
+    products_file = models.FileField(blank=True, null=True)
     interval = models.PositiveIntegerField("Interval (minutes)",
                                            validators=[MinValueValidator(5)],
                                            default=10)
@@ -80,7 +80,13 @@ class ScrapyTask(models.Model):
     def save(self, *args, **kwargs):
         if self.pk is None:
             self.status = 1
+
             super(ScrapyTask, self).save(*args, **kwargs)
+
+            if self.mode == 2 and self.products_file:
+                with open(settings.MEDIA_ROOT+'/'+self.products_file.name, 'r') as products_file:
+                    self.products = products_file.read()
+                self.update()
             self.run_scraper()
 
     def update(self):

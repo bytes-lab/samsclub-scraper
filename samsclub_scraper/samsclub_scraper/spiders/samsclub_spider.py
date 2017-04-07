@@ -26,26 +26,27 @@ class SamsclubSpider(scrapy.Spider):
         "User-Agent": "samsclub_scraper (+http://www.yourdomain.com)"
     }
 
-    def __init__(self, task_id, mode=0, categories=[], products=[]):
+    def __init__(self, task_id, mode=1, categories=[], products=[]):
         self.task_id = int(task_id)
         self.mode = int(mode)
         self.categories = categories
         self.excludes = []        
         self.products = products
 
-        if mode == 0:
-            self.categories = get_subcategories()
-            self.excludes = [item.url for item in Product.objects.all()]
-        elif mode == 1:
+        if mode == 1:
             set_old_category_products(self.categories[0])            
-            self.excludes = get_category_products(self.categories[0])
+            if categories == ['/']:
+                self.categories = get_subcategories()
+                self.excludes = [item.url for item in Product.objects.all()]
+            else:
+                self.excludes = get_category_products(self.categories[0])
         elif mode == 2:
             products = products.replace('\n', ',')
             products_ = [int(item) for item in products.split(',')]
             self.products = Product.objects.filter(id__in=products_)
 
     def start_requests(self):
-        if self.mode in [0, 1]:
+        if self.mode == 1:
             return [scrapy.Request('https://www.samsclub.com{}.cp'.format(item), 
                                    headers=self.header, 
                                    callback=self.parse) 
@@ -57,12 +58,13 @@ class SamsclubSpider(scrapy.Spider):
                                          headers=self.header, 
                                          callback=self.detail)
                 request.meta['model_num'] = product.special
-                request.meta['category'] = product.category
+                request.meta['category'] = product.category_id
                 product_requests.append(request)
             return product_requests
 
     def closed(self, reason):
         self.update_run_time()
+        # export script
 
     def parse(self, response):
         if self.stop_scrapy():
@@ -239,6 +241,24 @@ class SamsclubSpider(scrapy.Spider):
             task.last_run = datetime.datetime.now()
             task.status = 2 if task.mode == 2 else 0       # Sleeping / Finished
             task.update()
+
+            if task.mode == 1:
+                result = []
+                for cate in task.category.get_all_children():
+                    # only for new products
+                    for item in Product.objects.filter(category=cate, 
+                                                       is_new=True):
+                        result.append(item)
+            else:
+                ids = task.products.replace('\n', ',')
+                ids = [int(item) for item in ids.split(',')]
+                result = Product.objects.filter(id__in=ids)
+            fields = [f.name for f in Product._meta.get_fields() 
+                      if f.name not in ['updated_at', 'is_new']]
+
+            date = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+            path = '/home/exports/{}-{}.csv'.format(task.title, date)
+            write_report(result, path, fields)
 
     def stop_scrapy(self):
         if self.task_id:

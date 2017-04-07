@@ -39,19 +39,23 @@ class ScrapyTaskForm(forms.ModelForm):
         mode = self.cleaned_data.get('mode')
         category = self.cleaned_data.get('category')
         products = self.cleaned_data.get('products')
-        
+
         if mode == 1:
             if not category:
                 raise forms.ValidationError("Category should be provided in " 
                                           + "Category mode.")
         elif mode == 2:
-            products = products.replace('\n', ',')
-            for item in products.split(','):
-                try:
-                    Product.objects.get(id=int(item))
-                except Exception, e:
-                    raise forms.ValidationError("Products should be comma "
-                        + "seperated VALID product id list e.g) 12432, 12424, ...")
+            if products.strip():
+                products = products.replace('\n', ',')
+                for item in products.split(','):
+                    try:
+                        Product.objects.get(id=int(item))
+                    except Exception, e:
+                        raise forms.ValidationError("Products should be comma "
+                            + "seperated VALID product id list e.g) 12432, 12424, ...")
+            elif not self.cleaned_data.get('products_file'):
+                raise forms.ValidationError("Please provide a list of product IDs or a file")
+
         return self.cleaned_data
 
 
@@ -74,7 +78,7 @@ class ScrapyTaskAdmin(admin.ModelAdmin):
         }),
         ('Products Mode', {
             'classes': ('collapse',),
-            'fields': ('products', 'interval',),
+            'fields': ('products', 'products_file', 'interval'),
         }),
     )
 
