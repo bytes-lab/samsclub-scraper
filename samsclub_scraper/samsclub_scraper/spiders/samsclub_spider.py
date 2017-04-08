@@ -38,9 +38,7 @@ class SamsclubSpider(scrapy.Spider):
                 self.categories = [self.task.category.url]
                 self.excludes = get_category_products(self.categories[0])
         elif self.task.mode == 2:
-            products = self.task.products.replace('\n', ',')
-            products_ = [int(item) for item in products.split(',')]
-            self.products = Product.objects.filter(id__in=products_)
+            self.products = Product.objects.filter(id__in=get_ids(self.task.products))
 
     def start_requests(self):
         if self.task.mode == 1:
@@ -259,9 +257,7 @@ class SamsclubSpider(scrapy.Spider):
                                                    is_new=True):
                     result.append(item)
         else:
-            ids = self.task.products.replace('\n', ',')
-            ids = [int(item) for item in ids.split(',')]
-            result = Product.objects.filter(id__in=ids)
+            result = Product.objects.filter(id__in=get_ids(self.task.products))
 
         fields = [f.name for f in Product._meta.get_fields() 
                   if f.name not in ['updated_at', 'is_new']]

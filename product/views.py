@@ -143,3 +143,8 @@ def get_category_products(category, attr='url'):
 def set_old_category_products(category):
     for cate in category.get_all_children():
         Product.objects.filter(category=cate).update(is_new=False)
+
+
+def get_ids(list_str):
+    ids = list_str.replace('\n', ',')
+    return [int(item) for item in ids.split(',') if item]

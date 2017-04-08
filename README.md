@@ -7,7 +7,7 @@
 	pip install -r requirements.txt
 
 #### Migrate the database:
-	python manage makemigrations
+	python manage makemigrations product
 	python manage migrate
 
 #### Create a superuser
@@ -42,10 +42,10 @@
 	export C_FORCE_ROOT="true"
 	celery -A tasks worker --loglevel=info
 
-	cd smasclub_site/samsclub_scraper
-	export C_FORCE_ROOT="true"
-	celery worker -l info -A start --beat
-
+#### Add a cron entry
+	
+	* * * * * python /root/cron_task.py
+	
 #### Kill workers:
 	ps aux|grep 'celery worker'
 	kill <pid>s
