@@ -7,11 +7,11 @@
 	pip install -r requirements.txt
 
 #### Migrate the database:
-	python manage makemigrations product
-	python manage migrate
+	python manage.py makemigrations product
+	python manage.py migrate
 
 #### Create a superuser
-	python manage createsuperuser
+	python manage.py createsuperuser
 
 #### Run the project:
 	cd Product-Scraper/
@@ -45,7 +45,7 @@
 #### Add a cron entry
 	
 	* * * * * python /root/cron_task.py
-	
+
 #### Kill workers:
 	ps aux|grep 'celery worker'
 	kill <pid>s
