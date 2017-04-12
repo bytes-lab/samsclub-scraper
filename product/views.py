@@ -70,14 +70,14 @@ def init_category(request):
 @login_required(login_url='/admin/login/')
 def export_products(request):
     if request.method == "POST":
-        product_ids = request.POST.get('ids').strip().split(',')
+        product_ids = request.POST.get('ids').strip()
         result_csv_fields = request.POST.getlist('props[]')
         path = datetime.datetime.now().strftime("/tmp/.samsclub_products_%Y_%m_%d_%H_%M_%S.csv")
 
-        if product_ids == [u'']:
+        if product_ids == u'':
             queryset = Product.objects.all()
         else:
-            queryset = Product.objects.filter(id__in=product_ids)
+            queryset = Product.objects.filter(id__in=get_ids(product_ids))
 
         write_report(queryset, path, result_csv_fields)
         
