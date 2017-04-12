@@ -104,10 +104,11 @@ class SamsclubSpider(scrapy.Spider):
             total_records = response.meta.get('total_records', self.get_total_records(response))
             
             if offset + 48 < total_records:
+                offset += 48
                 base_url = response.url.split('?')[0]
                 next_url = base_url+'?offset={}'.format(offset)
                 request = scrapy.Request(next_url, headers=self.header, callback=self.parse)
-                request.meta['offset'] = offset + 48
+                request.meta['offset'] = offset
                 request.meta['total_records'] = total_records
                 yield request
 

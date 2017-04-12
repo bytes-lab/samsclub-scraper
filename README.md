@@ -40,7 +40,7 @@
 #### Run celery for store products and scraping:
     cd smasclub_site/samsclub_scraper/samsclub_scraper
     export C_FORCE_ROOT="true"
-    celery -A tasks worker --loglevel=info
+    celery -A tasks worker --loglevel=info --concurrency=4
 
 #### Add a cron entry
     
