@@ -3,4 +3,4 @@ scrapy
 requests
 celery
 selenium
-#MySQL-python
+mysqlclient

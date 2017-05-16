@@ -51,5 +51,5 @@
     mkdir /home/exports
     
 #### Kill workers:
-    ps aux|grep 'celery worker'
+    ps aux|grep 'tasks worker'
     kill <pid>s
