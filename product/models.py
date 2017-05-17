@@ -8,8 +8,8 @@ from django.conf import settings
 from django.core.validators import MinValueValidator
 
 class Category(models.Model):    
-    url = models.CharField(max_length=100, primary_key=True)
-    title = models.CharField(max_length=100)
+    url = models.CharField(max_length=200, primary_key=True)
+    title = models.CharField(max_length=200)
     parent = models.ForeignKey('Category', null=True)
 
     def __unicode__(self):
@@ -32,7 +32,7 @@ class Category(models.Model):
 class Product(models.Model):
     id = models.IntegerField(primary_key=True)
     title = models.CharField(max_length=250)
-    price = models.CharField(max_length=10)
+    price = models.CharField(max_length=20)
     picture = models.CharField(max_length=250)
     rating = models.FloatField()
     review_count = models.IntegerField()
